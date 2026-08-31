@@ -1,0 +1,165 @@
+import { Trip } from '@/types/trip'
+
+export const AVAILABLE_CITIES = [
+  'Jakarta',
+  'Bandung',
+  'Bekasi',
+  'Bogor',
+  'Tangerang',
+] as const
+
+export const DEFAULT_TRIPS: Trip[] = [
+  {
+    id: 'TRIP-JKT-BDG-01',
+    from: 'Jakarta',
+    to: 'Bandung',
+    departureTime: '06:30',
+    arrivalTime: '09:15',
+    duration: '2j 45m',
+    price: 135000,
+    label: 'Pagi',
+    availableSeats: 7,
+    totalSeats: 12,
+    occupiedSeats: [2, 5, 8, 11],
+    timeZone: 'WIB',
+    departurePoint: 'Blok M Terminal, Jakarta Selatan',
+    arrivalPoint: 'Kelana Point Pasteur, Bandung',
+    amenities: ['Executive Seat', 'USB Fast Charging', 'Air Mineral', 'Full AC'],
+  },
+  {
+    id: 'TRIP-JKT-BDG-02',
+    from: 'Jakarta',
+    to: 'Bandung',
+    departureTime: '10:00',
+    arrivalTime: '12:45',
+    duration: '2j 45m',
+    price: 145000,
+    label: 'Favorit',
+    availableSeats: 4,
+    totalSeats: 12,
+    occupiedSeats: [1, 2, 4, 7, 8, 9, 11, 12],
+    timeZone: 'WIB',
+    departurePoint: 'Blok M Terminal, Jakarta Selatan',
+    arrivalPoint: 'Kelana Point Pasteur, Bandung',
+    amenities: ['Executive Seat', 'USB Fast Charging', 'Air Mineral', 'Full AC'],
+  },
+  {
+    id: 'TRIP-JKT-BDG-03',
+    from: 'Jakarta',
+    to: 'Bandung',
+    departureTime: '13:30',
+    arrivalTime: '16:15',
+    duration: '2j 45m',
+    price: 135000,
+    label: 'Siang',
+    availableSeats: 8,
+    totalSeats: 12,
+    occupiedSeats: [3, 6, 9, 10],
+    timeZone: 'WIB',
+    departurePoint: 'Blok M Terminal, Jakarta Selatan',
+    arrivalPoint: 'Kelana Point Pasteur, Bandung',
+    amenities: ['Executive Seat', 'USB Fast Charging', 'Air Mineral', 'Full AC'],
+  },
+  {
+    id: 'TRIP-JKT-BDG-04',
+    from: 'Jakarta',
+    to: 'Bandung',
+    departureTime: '16:30',
+    arrivalTime: '19:25',
+    duration: '2j 55m',
+    price: 155000,
+    label: 'Sore',
+    availableSeats: 9,
+    totalSeats: 12,
+    occupiedSeats: [1, 5, 8],
+    timeZone: 'WIB',
+    departurePoint: 'Blok M Terminal, Jakarta Selatan',
+    arrivalPoint: 'Kelana Point Pasteur, Bandung',
+    amenities: ['Executive Seat', 'USB Fast Charging', 'Air Mineral', 'Full AC'],
+  },
+  {
+    id: 'TRIP-JKT-BDG-05',
+    from: 'Jakarta',
+    to: 'Bandung',
+    departureTime: '19:45',
+    arrivalTime: '22:30',
+    duration: '2j 45m',
+    price: 145000,
+    label: 'Malam',
+    availableSeats: 6,
+    totalSeats: 12,
+    occupiedSeats: [2, 3, 7, 8, 11, 12],
+    timeZone: 'WIB',
+    departurePoint: 'Blok M Terminal, Jakarta Selatan',
+    arrivalPoint: 'Kelana Point Pasteur, Bandung',
+    amenities: ['Executive Seat', 'USB Fast Charging', 'Air Mineral', 'Full AC'],
+  },
+]
+
+export function getTrips(from: string, to: string): Trip[] {
+  // If exact match doesn't exist, generate standard schedule with correct cities
+  const directMatches = DEFAULT_TRIPS.filter(
+    (t) => t.from.toLowerCase() === from.toLowerCase() && t.to.toLowerCase() === to.toLowerCase()
+  )
+
+  if (directMatches.length > 0) {
+    return directMatches
+  }
+
+  // Generate dynamic trips for other city pairs
+  const departurePoint = `${from} Center Pool`
+  const arrivalPoint = `Kelana Point, ${to}`
+  return [
+    {
+      id: `TRIP-${from.slice(0, 3).toUpperCase()}-${to.slice(0, 3).toUpperCase()}-01`,
+      from,
+      to,
+      departureTime: '07:00',
+      arrivalTime: '10:00',
+      duration: '3j 00m',
+      price: 140000,
+      label: 'Pagi',
+      availableSeats: 6,
+      totalSeats: 12,
+      occupiedSeats: [1, 4, 5, 8, 10, 11],
+      timeZone: 'WIB',
+      departurePoint,
+      arrivalPoint,
+      amenities: ['Executive Seat', 'USB Fast Charging', 'Air Mineral', 'Full AC'],
+    },
+    {
+      id: `TRIP-${from.slice(0, 3).toUpperCase()}-${to.slice(0, 3).toUpperCase()}-02`,
+      from,
+      to,
+      departureTime: '11:15',
+      arrivalTime: '14:15',
+      duration: '3j 00m',
+      price: 150000,
+      label: 'Favorit',
+      availableSeats: 5,
+      totalSeats: 12,
+      occupiedSeats: [2, 3, 6, 7, 8, 9, 12],
+      timeZone: 'WIB',
+      departurePoint,
+      arrivalPoint,
+      amenities: ['Executive Seat', 'USB Fast Charging', 'Air Mineral', 'Full AC'],
+    },
+    {
+      id: `TRIP-${from.slice(0, 3).toUpperCase()}-${to.slice(0, 3).toUpperCase()}-03`,
+      from,
+      to,
+      departureTime: '17:00',
+      arrivalTime: '20:00',
+      duration: '3j 00m',
+      price: 155000,
+      label: 'Sore',
+      availableSeats: 8,
+      totalSeats: 12,
+      occupiedSeats: [2, 5, 8, 11],
+      timeZone: 'WIB',
+      departurePoint,
+      arrivalPoint,
+      amenities: ['Executive Seat', 'USB Fast Charging', 'Air Mineral', 'Full AC'],
+    },
+  ]
+}

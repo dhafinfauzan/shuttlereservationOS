@@ -1,0 +1,250 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  owner
+  admin_cs
+  driver
+}
+
+model User {
+  id            String         @id @default(uuid())
+  email         String         @unique
+  passwordHash  String
+  name          String
+  role          String         @default("admin_cs") // "owner", "admin_cs", "driver"
+  avatar        String?        // e.g. "RP", "AN"
+  phone         String?
+  isActive      Boolean        @default(true)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  driverProfile Driver?
+  activityLogs  ActivityLog[]
+  manifestCheckIns Manifest[]  @relation("CheckedInByUser")
+
+  @@map("users")
+}
+
+model Driver {
+  id             String    @id @default(uuid())
+  userId         String?   @unique
+  user           User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  fullName       String    // e.g. "A. Nugraha", "F. Ramadhan", "D. Permana", "R. Akbar"
+  phone          String
+  licenseNumber  String
+  status         String    @default("active") // "active", "off_duty", "on_trip"
+  avatarInitials String    @default("DR")
+  trips          Trip[]
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@map("drivers")
+}
+
+model Vehicle {
+  id          String    @id @default(uuid())
+  plateNumber String    @unique // e.g. "B 7124 KLN", "B 7031 KLN"
+  model       String    // e.g. "Toyota HiAce Premio Executive"
+  capacity    Int       @default(12)
+  seatLayout  String    @default("2-1")
+  status      String    @default("active") // "active", "maintenance", "inactive"
+  trips       Trip[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("vehicles")
+}
+
+model Point {
+  id             String        @id @default(uuid())
+  name           String        // e.g. "Blok M", "Pasteur", "Bekasi Barat"
+  city           String        // e.g. "Jakarta", "Bandung", "Bekasi"
+  address        String
+  type           String        @default("both") // "pickup", "dropoff", "both"
+  latitude       Float?
+  longitude      Float?
+  isActive       Boolean       @default(true)
+  departureTrips Trip[]        @relation("DeparturePoint")
+  arrivalTrips   Trip[]        @relation("ArrivalPoint")
+  routePoints    RoutePoint[]
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@map("points")
+}
+
+model Route {
+  id               String        @id @default(uuid())
+  name             String        @unique // e.g. "Jakarta → Bandung", "Bandung → Jakarta"
+  originCity       String        // e.g. "Jakarta"
+  destinationCity  String        // e.g. "Bandung"
+  distanceKm       Int           @default(150)
+  estimatedMinutes Int           @default(165) // 2 hours 45 mins
+  isActive         Boolean       @default(true)
+  points           RoutePoint[]
+  trips            Trip[]
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  @@map("routes")
+}
+
+model RoutePoint {
+  id          String   @id @default(uuid())
+  routeId     String
+  route       Route    @relation(fields: [routeId], references: [id], onDelete: Cascade)
+  pointId     String
+  point       Point    @relation(fields: [pointId], references: [id], onDelete: Cascade)
+  sequence    Int
+  type        String   @default("pickup") // "pickup", "dropoff"
+  stopMinutes Int      @default(0)
+
+  @@unique([routeId, pointId, sequence])
+  @@map("route_points")
+}
+
+model Trip {
+  id               String       @id @default(uuid())
+  tripCode         String       @unique // e.g. "KLN-0630", "KLN-1000", "KLN-1330", "KLN-1630"
+  routeId          String
+  route            Route        @relation(fields: [routeId], references: [id])
+  vehicleId        String
+  vehicle          Vehicle      @relation(fields: [vehicleId], references: [id])
+  driverId         String
+  driver           Driver       @relation(fields: [driverId], references: [id])
+  departurePointId String
+  departurePoint   Point        @relation("DeparturePoint", fields: [departurePointId], references: [id])
+  arrivalPointId   String
+  arrivalPoint     Point        @relation("ArrivalPoint", fields: [arrivalPointId], references: [id])
+  departureDate    String       // YYYY-MM-DD
+  departureTime    String       // "06:30"
+  arrivalTime      String       // "09:15"
+  timezone         String       @default("WIB")
+  basePrice        Int          // e.g. 135000, 145000, 155000
+  capacity         Int          @default(12)
+  label            String?      // "Pagi", "Favorit", "Sore"
+  status           String       @default("scheduled") // "scheduled", "boarding", "departed", "completed", "cancelled", "full"
+  notes            String?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  seats            TripSeat[]
+  bookings         Booking[]
+  manifests        Manifest[]
+
+  @@map("trips")
+}
+
+model TripSeat {
+  id            String        @id @default(uuid())
+  tripId        String
+  trip          Trip          @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  seatNumber    String        // "01", "02", ..., "12"
+  status        String        @default("available") // "available", "held", "booked", "blocked"
+  heldBy        String?       // reference to bookingId / session
+  heldExpiresAt DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  bookingSeats  BookingSeat[]
+
+  @@unique([tripId, seatNumber])
+  @@map("trip_seats")
+}
+
+model Booking {
+  id            String        @id @default(uuid())
+  bookingCode   String        @unique // "KLN-0905-6A7", "KLN-0905-9B2"
+  tripId        String
+  trip          Trip          @relation(fields: [tripId], references: [id])
+  customerName  String
+  customerPhone String
+  customerEmail String
+  accessTokenHash String?
+  passengerCount Int          @default(1)
+  totalAmount   Int           // IDR integer
+  paymentMethod String        @default("QRIS") // "QRIS", "TRANSFER", "CASH", "SIMULATION"
+  paymentStatus String        @default("unpaid") // "unpaid", "paid", "refunded", "failed"
+  bookingStatus String        @default("waiting_payment") // "draft", "seat_held", "waiting_payment", "paid", "expired", "cancelled"
+  heldExpiresAt DateTime?
+  paidAt        DateTime?
+  cancelledAt   DateTime?
+  cancelReason  String?
+  avatar        String?       // initials e.g. "DP", "SA"
+  notes         String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  seats         BookingSeat[]
+  manifests     Manifest[]
+
+  @@map("bookings")
+}
+
+model BookingSeat {
+  id            String    @id @default(uuid())
+  bookingId     String
+  booking       Booking   @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  tripSeatId    String
+  tripSeat      TripSeat  @relation(fields: [tripSeatId], references: [id])
+  seatNumber    String    // "01", "06", etc.
+  passengerName String?
+  price         Int
+
+  @@map("booking_seats")
+}
+
+model Manifest {
+  id                String    @id @default(uuid())
+  tripId            String
+  trip              Trip      @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  bookingId         String
+  booking           Booking   @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  seatNumber        String
+  passengerName     String
+  passengerPhone    String?
+  checkInStatus     String    @default("pending") // "pending", "checked_in", "no_show"
+  checkedInAt       DateTime?
+  checkedInByUserId String?
+  checkedInByUser   User?     @relation("CheckedInByUser", fields: [checkedInByUserId], references: [id])
+  notes             String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@unique([tripId, seatNumber])
+  @@map("manifests")
+}
+
+model ActivityLog {
+  id          String   @id @default(uuid())
+  type        String   // "paid", "booked", "alert", "cancel", "checkin", "trip_update"
+  title       String   // "Pembayaran diterima"
+  description String   // "KLN-0905-9B2 · Sarah Amalia"
+  metadata    String?  // JSON string
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id])
+  createdAt   DateTime @default(now())
+
+  @@map("activity_logs")
+}
+
+model PaymentWebhookLog {
+  id          String    @id @default(uuid())
+  eventId     String    @unique // Idempotency key
+  provider    String    @default("dummy_simulator")
+  bookingCode String?
+  status      String    // "processed", "ignored", "failed"
+  payload     String    // JSON string
+  response    String?
+  processedAt DateTime  @default(now())
+  createdAt   DateTime  @default(now())
+
+  @@map("payment_webhook_logs")
+}

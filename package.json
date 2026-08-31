@@ -1,0 +1,47 @@
+{
+  "name": "kelana-shuttle-platform",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "apps/admin",
+    "apps/api"
+  ],
+  "overrides": {
+    "deepmerge-ts": "$deepmerge-ts",
+    "esbuild": "$esbuild"
+  },
+  "scripts": {
+    "dev": "concurrently --kill-others-on-fail --names API,WEB,ADMIN \"npm --workspace kelana-shuttle-admin-be run dev\" \"next dev --hostname 127.0.0.1 --port 3000\" \"npm --workspace kelana-shuttle-admin run dev -- --host 127.0.0.1 --port 5174\"",
+    "dev:web": "next dev --hostname 127.0.0.1 --port 3000",
+    "dev:api": "npm --workspace kelana-shuttle-admin-be run dev",
+    "dev:admin": "npm --workspace kelana-shuttle-admin run dev -- --host 127.0.0.1 --port 5174",
+    "build": "next build",
+    "build:all": "npm run build && npm --workspace kelana-shuttle-admin run build && npm --workspace kelana-shuttle-admin-be run build",
+    "start": "next start",
+    "lint": "eslint src tests",
+    "test": "npm --workspace kelana-shuttle-admin-be test",
+    "audit:e2e": "DATABASE_URL=file:./e2e.db npm --workspace kelana-shuttle-admin-be run db:setup && E2E_DATABASE_URL=file:./e2e.db node tests/audit.mjs",
+    "audit:admin": "DATABASE_URL=file:./e2e.db npm --workspace kelana-shuttle-admin-be run db:setup && E2E_DATABASE_URL=file:./e2e.db node tests/admin-audit.mjs",
+    "verify": "npm run lint && npm --workspace kelana-shuttle-admin-be run typecheck && npm run build:all && npm test && npm run audit:e2e && npm run audit:admin && npm audit --audit-level=low"
+  },
+  "dependencies": {
+    "lucide-react": "^1.38.0",
+    "next": "16.3.3",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "zod": "^4.5.4"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.62.1",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "concurrently": "^10.0.5",
+    "deepmerge-ts": "8.0.2",
+    "esbuild": "0.28.2",
+    "eslint": "^9",
+    "eslint-config-next": "16.3.3",
+    "playwright": "^1.62.1",
+    "typescript": "^5"
+  }
+}
